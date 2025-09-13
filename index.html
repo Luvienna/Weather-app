@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: url('https://i.pinimg.com/originals/05/51/7e/05517ebd2de835de4f408e686a2206c8.gif');
+            background-size: cover;
+            background-position: center;
+            padding: 1rem;
+        }
+
+        /* Custom scrollbar for dropdown */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-lg bg-white bg-opacity-20 rounded-2xl shadow-xl p-6 sm:p-8 backdrop-blur-sm transition-transform duration-500">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-center mb-6 text-gray-900">
+            Weather App
+        </h1>
+        
+        <!-- Search Page -->
+        <div id="search-page">
+            <!-- Search Form -->
+            <form id="search-form" class="flex flex-col sm:flex-row gap-4 mb-8 relative">
+                <input
+                    type="text"
+                    id="search-input"
+                    placeholder="Search or select a city..."
+                    class="flex-grow p-3 rounded-lg bg-white bg-opacity-20 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#e0b0ff] transition duration-300"
+                />
+                <button
+                    type="submit"
+                    class="px-6 py-3 bg-[#e0b0ff] text-[#1a0f2b] font-semibold rounded-lg shadow-lg hover:bg-[#c080ff] focus:outline-none focus:ring-2 focus:ring-[#e0b0ff] focus:ring-offset-2 focus:ring-offset-white transition duration-300"
+                >
+                    Search
+                </button>
+                <ul id="city-dropdown" class="absolute z-10 w-full mt-14 bg-white bg-opacity-90 border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden custom-scrollbar"></ul>
+            </form>
+        </div>
+
+        <!-- Results Page (Initially hidden) -->
+        <div id="results-page" class="hidden">
+            <div id="weather-container">
+                <!-- Loading, error, or weather data will be displayed here -->
+            </div>
+            <button id="back-button" class="mt-8 w-full px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-white transition duration-300">
+                Back to Search
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('search-input');
+            const searchForm = document.getElementById('search-form');
+            const weatherContainer = document.getElementById('weather-container');
+            const cityDropdown = document.getElementById('city-dropdown');
+            const searchPage = document.getElementById('search-page');
+            const resultsPage = document.getElementById('results-page');
+            const backButton = document.getElementById('back-button');
+            const dropdownRef = searchForm;
+
+            const cities = [
+                "New York", "London", "Tokyo", "Paris", "Sydney", "Dubai", "Rio de Janeiro",
+                "Mumbai", "Cairo", "Moscow", "Berlin"
+            ];
+
+            // This is the API key you provided, configured to work with the correct service (WeatherAPI).
+            const apiKey = "bea155d9b390479f9cc161714251309";
+            // Updated API URL to use the WeatherAPI service.
+            const apiUrl = `https://api.weatherapi.com/v1/current.json?key=${apiKey}`;
+
+            const showMessage = (message, isError = false) => {
+                weatherContainer.innerHTML = `
+                    <div class="text-center p-4 rounded-lg border ${isError ? 'bg-red-500 bg-opacity-20 text-red-300 border-red-400' : 'text-gray-900'}">
+                        <p>${message}</p>
+                    </div>
+                `;
+            };
+
+            const renderWeatherData = (data) => {
+                const { location, current } = data;
+                const iconUrl = `https:${current.condition.icon}`;
+                
+                weatherContainer.innerHTML = `
+                    <div class="text-center mt-6 p-6 bg-white bg-opacity-10 rounded-xl shadow-lg border border-white border-opacity-20 transition-all duration-300 ease-in-out transform">
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+                            ${current.condition ? `<img src="${iconUrl}" alt="${current.condition.text}" class="w-20 h-20 sm:w-24 sm:h-24">` : ''}
+                            <div class="text-left">
+                                <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-1">${location.name}</h2>
+                                <p class="text-xl text-gray-600 capitalize">${current.condition.text}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mt-4 text-gray-900 text-left">
+                            <div class="bg-white bg-opacity-10 p-4 rounded-xl shadow">
+                                <p class="text-sm font-semibold text-gray-600">Temperature</p>
+                                <p class="text-2xl font-bold">${Math.round(current.temp_c)}°C</p>
+                            </div>
+                            <div class="bg-white bg-opacity-10 p-4 rounded-xl shadow">
+                                <p class="text-sm font-semibold text-gray-600">Feels Like</p>
+                                <p class="text-2xl font-bold">${Math.round(current.feelslike_c)}°C</p>
+                            </div>
+                            <div class="bg-white bg-opacity-10 p-4 rounded-xl shadow">
+                                <p class="text-sm font-semibold text-gray-600">Humidity</p>
+                                <p class="text-2xl font-bold">${current.humidity}%</p>
+                            </div>
+                            <div class="bg-white bg-opacity-10 p-4 rounded-xl shadow">
+                                <p class="text-sm font-semibold text-gray-600">Wind Speed</p>
+                                <p class="text-2xl font-bold">${current.wind_kph} km/h</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const fetchWeather = async (cityName) => {
+                weatherContainer.innerHTML = `
+                    <div class="flex justify-center items-center py-8">
+                        <div class="w-12 h-12 border-4 border-[#e0b0ff] border-dotted rounded-full animate-spin"></div>
+                    </div>
+                `;
+                try {
+                    // Fetch weather data from WeatherAPI
+                    const response = await fetch(`${apiUrl}&q=${cityName}`);
+                    const data = await response.json();
+
+                    if (data.error) {
+                        throw new Error(data.error.message);
+                    }
+
+                    renderWeatherData(data);
+                    // Show results and hide search page
+                    searchPage.classList.add('hidden');
+                    resultsPage.classList.remove('hidden');
+                } catch (err) {
+                    showMessage(err.message, true);
+                    // Still show results page to display the error
+                    searchPage.classList.add('hidden');
+                    resultsPage.classList.remove('hidden');
+                }
+            };
+
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    fetchWeather(searchTerm);
+                    cityDropdown.classList.add('hidden');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                resultsPage.classList.add('hidden');
+                searchPage.classList.remove('hidden');
+                weatherContainer.innerHTML = ''; // Clear weather data
+                searchInput.value = ''; // Clear search input
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                const value = e.target.value.toLowerCase();
+                const filtered = cities.filter(city => city.toLowerCase().startsWith(value));
+                cityDropdown.innerHTML = '';
+                if (value && filtered.length > 0) {
+                    filtered.forEach(city => {
+                        const li = document.createElement('li');
+                        li.textContent = city;
+                        li.className = "p-3 cursor-pointer hover:bg-gray-200 transition-colors duration-200 text-gray-900";
+                        li.addEventListener('click', () => {
+                            searchInput.value = city;
+                            fetchWeather(city);
+                            cityDropdown.classList.add('hidden');
+                        });
+                        cityDropdown.appendChild(li);
+                    });
+                    cityDropdown.classList.remove('hidden');
+                } else {
+                    cityDropdown.classList.add('hidden');
+                }
+            });
+
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.length > 0) {
+                    cityDropdown.classList.remove('hidden');
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!dropdownRef.contains(event.target)) {
+                    cityDropdown.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
