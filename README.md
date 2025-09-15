@@ -15,3 +15,6 @@ Intuitive UI: A clean, easy-to-use interface ensures a smooth user experience.
 - Tailwind CSS
 - JavaScript
 - Weather API: Integration with a third-party weather API to fetch up-to-date data.
+
+### Creator
+⋆. 𐙚˚࿔ Luvienna 𝜗𝜚˚⋆
